@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+generator zod {
+  provider       = "zod-prisma-types"
+  output         = "../src/types/db"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String?
+  email           String?          @unique
+  emailVerified   DateTime?        @map("email_verified")
+  image           String?
+  role            UserRole         @default(USER)
+  accounts        Account[]
+  sessions        Session[]
+
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  // Team relationships
+  teamId          String?
+
+  // Inventory relationships
+  ownedIngredients Ingredient[]
+
+  @@map("users")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Category {
+  id          String      @id @default(cuid())
+  name        String      @unique 
+  description String?     
+  color       String?     
+  isActive    Boolean     @default(true) @map("is_active")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  
+  ingredients Ingredient[]
+  
+  @@map("categories")
+}
+
+model Ingredient {
+  id           String    @id @default(cuid())
+  name         String    // e.g., "Apple", "Milk (Whole)"
+  categoryId   String    @map("category_id")
+  weight       Float     // Weight in kg
+  bbeDate      DateTime  @map("bbe_date") // Best Before End date
+  ownerId      String    @map("owner_id")
+  isActive     Boolean   @default(true) @map("is_active") // For soft deletes
+  notes        String?   // Optional notes about the ingredient
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  // Relationships
+  category     Category  @relation(fields: [categoryId], references: [id])
+  owner        User      @relation(fields: [ownerId], references: [id])
+  
+  // Indexes for common queries
+  @@index([categoryId])
+  @@index([ownerId])
+  @@index([bbeDate]) // For expiry tracking
+  @@map("ingredients")
+}
+
+
+enum UserRole {
+  USER
+  MANAGER
+  ADMIN
+}
