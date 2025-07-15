@@ -1,7 +1,9 @@
 // app/api/ingredients/[id]/route.ts
 import { auth } from "@/lib/auth";
+import { PrismaClient } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+const prisma = new PrismaClient();
 
 export async function DELETE(
   request: NextRequest,
