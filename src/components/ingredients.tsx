@@ -135,7 +135,7 @@ function CreateIngredientDialog({ open, onOpenChange, categories }: CreateIngred
             />
           </div>
 
-          {categories && categories?.length === 0 && (
+          {categories && categories?.length > 0 && (
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="category" className="text-right">
                 Category *
